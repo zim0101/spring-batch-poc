@@ -1,6 +1,6 @@
 package com.zim0101.springbatchpoc.job.import_user;
 
-import com.zim0101.springbatchpoc.model.User;
+import com.zim0101.springbatchpoc.model.Account;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
@@ -15,6 +15,7 @@ import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
@@ -32,15 +33,16 @@ public class ImportUserBatchConfig {
     }
 
     @Bean
-    public FlatFileItemReader<User> reader() {
-        FlatFileItemReader<User> reader = new FlatFileItemReader<>();
-        reader.setResource(new ClassPathResource("src/main/resources/csv_imports/data.csv"));
+    public FlatFileItemReader<Account> reader() {
+        FlatFileItemReader<Account> reader = new FlatFileItemReader<>();
+        reader.setStrict(false);
+        reader.setResource(new FileSystemResource("src/main/resources/csv_imports/data.csv"));
         reader.setLineMapper(new DefaultLineMapper<>() {{
             setLineTokenizer(new DelimitedLineTokenizer() {{
-                setNames("id", "name", "email");
+                setNames("name", "email");
             }});
             setFieldSetMapper(new BeanWrapperFieldSetMapper<>() {{
-                setTargetType(User.class);
+                setTargetType(Account.class);
             }});
         }});
         return reader;
@@ -59,7 +61,7 @@ public class ImportUserBatchConfig {
     @Bean
     public Step importUser() {
         return new StepBuilder("importUser", jobRepository)
-                .<User, User>chunk(10, transactionManager)
+                .<Account, Account>chunk(10, transactionManager)
                 .reader(reader())
                 .processor(processor())
                 .writer(writer())
